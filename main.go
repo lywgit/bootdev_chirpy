@@ -26,42 +26,36 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) showMetricsHandlerFunc() http.HandlerFunc {
-	writeHitCnt := func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("current hit cnt %d", cfg.fileserverHits.Load())
-		s := fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())
-		w.Write([]byte(s))
-		w.WriteHeader(http.StatusOK)
-	}
-	return writeHitCnt
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
+	log.Printf("current hit cnt %d", cfg.fileserverHits.Load())
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(fmt.Appendf(nil, "Hits: %d", cfg.fileserverHits.Load()))
 }
 
-func (cfg *apiConfig) resetMetricsHandlerFunc() http.HandlerFunc {
-	resetHitCnt := func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Store(0)
-		log.Printf("reset hit cnt to %d", cfg.fileserverHits.Load())
-		w.WriteHeader(http.StatusOK)
-	}
-	return resetHitCnt
+func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
+	cfg.fileserverHits.Store(0)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Reset Hit count to 0"))
+	log.Printf("Reset hit cnt to %d", cfg.fileserverHits.Load())
 }
 
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
-	apiCfg := &apiConfig{} // remember to use ptr
+
+	apiCfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+	}
 
 	mux := http.NewServeMux()
-
 	fileHandler := http.FileServer(http.Dir(filepathRoot))
 	fileHandler = http.StripPrefix("/app", fileHandler)
 	fileHandler = apiCfg.middlewareMetricsInc(fileHandler)
 	mux.Handle("/app/", fileHandler)
-
 	mux.HandleFunc("/healthz", handlerReadiness)
-
-	mux.HandleFunc("/metrics", apiCfg.showMetricsHandlerFunc())
-
-	mux.HandleFunc("/reset", apiCfg.resetMetricsHandlerFunc())
+	mux.HandleFunc("/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("/reset", apiCfg.handlerReset)
 
 	// start server
 	server := http.Server{
