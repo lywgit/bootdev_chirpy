@@ -10,18 +10,11 @@ func replaceProfane(s string) string {
 	const replacement = "****"
 	cleanedWords := []string{}
 	for word := range strings.SplitSeq(s, " ") {
-		isClean := true
-		for _, pfWord := range profaneWords {
-			if strings.EqualFold(word, pfWord) {
-				isClean = false
-				cleanedWords = append(cleanedWords, replacement)
-				break
-			}
-		}
-		if isClean {
+		if _, exists := profaneWords[strings.ToLower(word)]; exists {
+			cleanedWords = append(cleanedWords, replacement)
+		} else {
 			cleanedWords = append(cleanedWords, word)
 		}
-
 	}
 	return strings.Join(cleanedWords, " ")
 }

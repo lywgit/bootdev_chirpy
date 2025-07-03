@@ -1,7 +1,8 @@
 package main
 
-var profaneWords = []string{
-	"kerfuffle",
-	"sharbert",
-	"fornax",
+// define profane word as set for fast lookup (map[string] struct{})
+var profaneWords = map[string]struct{}{
+	"kerfuffle": {},
+	"sharbert":  {},
+	"fornax":    {},
 }
