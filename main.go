@@ -21,7 +21,7 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -59,15 +59,19 @@ func main() {
 
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("DB_URL must be set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatal("error conecting DB")
+		log.Fatalf("Error opening database: %s", err)
 	}
 	dbQueries := database.New(db)
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		dbQueries:      dbQueries,
+		db:             dbQueries,
 	}
 
 	mux := http.NewServeMux()
