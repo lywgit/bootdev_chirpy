@@ -15,7 +15,7 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
-func (cfg *apiConfig) handlerAddUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {
 	type requestBody struct {
 		Email string `json:"email"`
 	}
@@ -23,16 +23,16 @@ func (cfg *apiConfig) handlerAddUser(w http.ResponseWriter, r *http.Request) {
 	req := requestBody{Email: ""}
 	err := decoder.Decode(&req)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "error decoding request", err) // 400
+		respondWithError(w, http.StatusBadRequest, "Couldn't decode request", err) // 400
 		return
 	}
 	if req.Email == "" {
-		respondWithError(w, http.StatusBadRequest, "email can not be empty", nil) // 400
+		respondWithError(w, http.StatusBadRequest, "Email can not be empty", nil) // 400
 		return
 	}
 	user, err := cfg.db.CreateUser(r.Context(), req.Email)
 	if err != nil {
-		respondWithError(w, 500, "CreateUser failed", err)
+		respondWithError(w, 500, "Create user failed", err)
 		return
 	}
 	respondWithJSON(w, http.StatusCreated, User{
