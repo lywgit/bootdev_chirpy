@@ -22,6 +22,7 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -47,9 +48,18 @@ func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
+	if cfg.platform != "dev" {
+		respondWithError(w, http.StatusForbidden, "Reset is not allowed", nil)
+		return
+	}
 	cfg.fileserverHits.Store(0)
+	err := cfg.db.DeleteAllUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "DeleteAllUsers failed", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Reset Hit count to 0"))
+	w.Write([]byte("Reset Hit count to 0 and delete all users"))
 	log.Printf("Reset hit cnt to %d", cfg.fileserverHits.Load())
 }
 
@@ -62,6 +72,7 @@ func main() {
 	if dbURL == "" {
 		log.Fatal("DB_URL must be set")
 	}
+	platform := os.Getenv("PLATFORM")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -72,6 +83,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
@@ -81,6 +93,7 @@ func main() {
 	mux.Handle("/app/", fileHandler)
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidate)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerAddUser)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)

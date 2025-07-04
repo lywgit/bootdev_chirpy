@@ -4,3 +4,6 @@ VALUES (
     gen_random_uuid(), Now(), Now(), $1
 )
 RETURNING *;
+
+-- name: DeleteAllUsers :exec
+TRUNCATE TABLE users;
