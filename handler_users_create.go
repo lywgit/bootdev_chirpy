@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lywgit/bootdev_chirpy/internal/auth"
+	"github.com/lywgit/bootdev_chirpy/internal/database"
 )
 
 type User struct {
@@ -17,10 +19,11 @@ type User struct {
 
 func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request) {
 	type requestBody struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	decoder := json.NewDecoder(r.Body)
-	req := requestBody{Email: ""}
+	req := requestBody{}
 	err := decoder.Decode(&req)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Couldn't decode request", err) // 400
@@ -30,7 +33,19 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusBadRequest, "Email can not be empty", nil) // 400
 		return
 	}
-	user, err := cfg.db.CreateUser(r.Context(), req.Email)
+	if req.Password == "" {
+		respondWithError(w, http.StatusBadRequest, "Password can not be empty", nil) // 400
+		return
+	}
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		respondWithError(w, 500, "could not hash password", err)
+	}
+	param := database.CreateUserParams{
+		Email:          req.Email,
+		HashedPassword: hashedPassword,
+	}
+	user, err := cfg.db.CreateUser(r.Context(), param)
 	if err != nil {
 		respondWithError(w, 500, "Create user failed", err)
 		return
