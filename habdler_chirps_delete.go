@@ -12,10 +12,12 @@ func (cfg *apiConfig) handlerChirpsDeleteByID(w http.ResponseWriter, r *http.Req
 	tokenString, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err) // 401
+		return
 	}
 	userID, err := auth.ValidateJWT(tokenString, cfg.jwtSecret)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err) // 401
+		return
 	}
 	chirpIDStr := r.PathValue("chirpID")
 	chirpID, err := uuid.Parse(chirpIDStr)

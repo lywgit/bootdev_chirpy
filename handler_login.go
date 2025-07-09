@@ -22,8 +22,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Couldn't decode request", err) // 400
 		return
 	}
-	user, _ := cfg.db.GetUserByEmail(r.Context(), req.Email)
-	if user == (database.User{}) {
+	user, err := cfg.db.GetUserByEmail(r.Context(), req.Email)
+	if err != nil {
 		log.Println("Login failed: email not found:", req.Email)
 		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", nil)
 		return
@@ -37,7 +37,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	// create refresh token
 	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
-		log.Fatalf("Could not make a refresh token: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Could not make a refresh token", err)
+		return
 	}
 	cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
 		Token:  refreshToken,
@@ -57,6 +58,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		Email:        user.Email,
 		Token:        tokenString,
 		RefreshToken: refreshToken,
+		IsChirpyRed:  user.IsChirpyRed,
 	})
 
 }

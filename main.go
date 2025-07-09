@@ -25,6 +25,7 @@ type apiConfig struct {
 	platform             string
 	jwtSecret            string
 	accessTokenExpireSec int
+	polkaKey             string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -78,10 +79,13 @@ func main() {
 	if platform == "" {
 		log.Fatal("PLATFORM must be set")
 	}
-
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		log.Fatal("jwtSecret must be set")
+		log.Fatal("JWT_SECRET must be set")
+	}
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY must be set")
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -96,6 +100,7 @@ func main() {
 		platform:             platform,
 		jwtSecret:            jwtSecret,
 		accessTokenExpireSec: 3600, // 1 hour = 3600 sec
+		polkaKey:             polkaKey,
 	}
 
 	mux := http.NewServeMux()
@@ -115,6 +120,8 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerChirpsGet)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerChirpsGetByID)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.handlerChirpsDeleteByID)
+
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlerPolkaWebhooks)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
