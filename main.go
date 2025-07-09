@@ -20,10 +20,11 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 }
 
 type apiConfig struct {
-	fileserverHits atomic.Int32
-	db             *database.Queries
-	platform       string
-	jwtSecret      string
+	fileserverHits       atomic.Int32
+	db                   *database.Queries
+	platform             string
+	jwtSecret            string
+	accessTokenExpireSec int
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -90,10 +91,11 @@ func main() {
 	dbQueries := database.New(db)
 
 	apiCfg := apiConfig{
-		fileserverHits: atomic.Int32{},
-		db:             dbQueries,
-		platform:       platform,
-		jwtSecret:      jwtSecret,
+		fileserverHits:       atomic.Int32{},
+		db:                   dbQueries,
+		platform:             platform,
+		jwtSecret:            jwtSecret,
+		accessTokenExpireSec: 3600, // 1 hour = 3600 sec
 	}
 
 	mux := http.NewServeMux()
@@ -104,6 +106,9 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
+	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
+
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerChirpsCreate)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerChirpsGet)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerChirpsGetByID)
