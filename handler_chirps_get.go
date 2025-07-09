@@ -1,11 +1,9 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/lywgit/bootdev_chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +27,6 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) handlerChirpsGetByID(w http.ResponseWriter, r *http.Request) {
 	chirpIDStr := r.PathValue("chirpID")
-	log.Println("[get chirp by id]:", chirpIDStr)
 	if chirpIDStr == "" {
 		respondWithError(w, http.StatusBadRequest, "chirp id is empty", nil)
 		return
@@ -41,11 +38,7 @@ func (cfg *apiConfig) handlerChirpsGetByID(w http.ResponseWriter, r *http.Reques
 	}
 	chirp, err := cfg.db.GetChirpByID(r.Context(), chirpID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Could not get chirp by id", err)
-		return
-	}
-	if chirp == (database.Chirp{}) {
-		respondWithError(w, http.StatusNotFound, "not found", nil)
+		respondWithError(w, http.StatusNotFound, "not found", err)
 		return
 	}
 
