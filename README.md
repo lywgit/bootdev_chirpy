@@ -17,14 +17,14 @@ You can refer to the course content for step-by-step guides (materials are freel
 
 1. Clone the repo 
 2. Prepare your own `.env` file (see env.example)
-3. In a terminal, `cd` into the project root.
+3. `cd` into the project root.
 4. Run database migration: 
     1. go to the schema dir: `cd sql/schema` 
     2. migration up: `goose postgres postgres://lywang:@localhost:5432/chirpy up` (your connection string will be different)
 5. Start API server 
-    1. go (back) to the project root
-    2. run `go run .`
-    3. server will be available on
+    1. `cd` into the project root.
+    2. Run `go run .`
+    3. Server will be available at `http://localhost:8080` and APIs at `http://localhost:8080/api/`
 
 ## APIs
 
