@@ -191,7 +191,45 @@ Key concepts learned:
 - goose: a database migration tool
 - sqlc: a tool that converts SQL queries into Go functions
 
+### A diagram of the layered structure showing the request flow
+
+```mermaid
+    graph TD
+    subgraph "Client"
+        A[Browser / HTTP Client]
+    end
+    subgraph "Presentation Layer (Go net/http)"
+        B["/"<br>HTTP Router in main.go] --> C{Request Mux};
+        C --> D["/api/..."<br>API Handlers];
+        C --> E["/app"<br>File Server];
+    end
+
+
+    subgraph "Business & Service Layer"
+        F["internal/auth"<br>JWT & Password Logic];
+        G["profane_words.go"<br>Input Validation];
+    end
+
+    subgraph "Data Access Layer (DAL)"
+        H["internal/database<br>Repository Pattern (sqlc)"]
+    end
+
+    subgraph "Database"
+        I[(PostgreSQL)]
+    end
+
+
+    %% Request Flow
+    A --> B;
+    D --> F;
+    D --> G;
+    D --> H;
+    H --> I;
+```
+
 
 ## Some Qeustions
 
 - No Goroutine is explicitly used. Perhaps this is automatically handled under http.Server?
+
+
